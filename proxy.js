@@ -1,24 +1,25 @@
 const http = require('http');
 
-const port = 4100;  // 服务运行端口
+const port = 4111;  // 服务运行端口
 
 const targetServer = 'example.com';  // 请求目标地址
 const targetPort = 9007;  // 请求目标端口
 
+const buildResponseHeader = (headers = {}) => ({
+    ...headers,
+    'Access-Control-Allow-Origin': headers.origin || '*',
+    'Access-Control-Allow-Credentials': true,
+    'Access-Control-Allow-Headers': 'X-Requested-With,Content-Type',
+    'Access-Control-Allow-Methods': 'PUT,POST,GET,DELETE,OPTIONS',
+    'Content-Type': 'application/json; charset=utf-8',
+});
+
 const server = http.createServer((req, res) => {
 
-    const { method, url } = req;
+    const { method, url, headers } = req;
 
-    // 设置响应头
-    res.writeHead(200, {
-        'Access-Control-Allow-Origin': req.headers.origin || '*',
-        'Access-Control-Allow-Credentials': true,
-        'Access-Control-Allow-Headers': 'X-Requested-With,Content-Type',
-        'Access-Control-Allow-Methods': 'PUT,POST,GET,DELETE,OPTIONS',
-        'Content-Type': 'application/json; charset=utf-8',
-    });
-
-    if (req.method === 'OPTIONS') {
+    if (method === 'OPTIONS') {
+        res.writeHead(200, buildResponseHeader());
         res.end();
         return;
     }
@@ -34,13 +35,10 @@ const server = http.createServer((req, res) => {
         // 请求配置
         const options = {
             method,
+            headers,
             hostname: targetServer,
             port: targetPort,
             path: url,
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': clientData.length,
-            },
         };
 
         // 发起请求
@@ -52,6 +50,7 @@ const server = http.createServer((req, res) => {
 
             httpRes.on('end', () => {
                 console.log(`[OK] ${method} ${url}`);
+                res.writeHead(httpRes.statusCode, buildResponseHeader(httpRes.headers));
                 res.write(data);
                 res.end();
             })
@@ -59,6 +58,7 @@ const server = http.createServer((req, res) => {
 
         httpReq.on('error', (err) => {
             console.log(`[Error] ${method} ${url}: ${err}`);
+            res.writeHead(httpRes.statusCode, buildResponseHeader(httpRes.headers));
             res.write(JSON.stringify({ error: err }));
             res.end();
         });
