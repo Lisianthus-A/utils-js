@@ -25,13 +25,14 @@ const server = http.createServer((req, res) => {
     }
 
     // 接收客户端发送过来的数据
-    let clientData = '';
+    const clientData = [];
     req.on('data', (chunk) => {
-        clientData += chunk;
+        clientData.push(chunk);
     });
 
     // 接收完毕
     req.on('end', () => {
+        const clientBuffer = Buffer.concat(clientData);
         // 请求配置
         const options = {
             method,
@@ -43,15 +44,16 @@ const server = http.createServer((req, res) => {
 
         // 发起请求
         const httpReq = http.request(options, (httpRes) => {
-            let data = '';
+            const serverData = [];
             httpRes.on('data', (chunk) => {
-                data += chunk;
+                serverData.push(chunk);
             });
 
             httpRes.on('end', () => {
                 console.log(`[OK] ${method} ${url}`);
+                const serverBuffer = Buffer.concat(serverData);
                 res.writeHead(httpRes.statusCode, buildResponseHeader(httpRes.headers));
-                res.write(data);
+                res.write(serverBuffer);
                 res.end();
             })
         });
@@ -63,7 +65,7 @@ const server = http.createServer((req, res) => {
             res.end();
         });
 
-        httpReq.write(clientData);
+        httpReq.write(clientBuffer);
         httpReq.end();
     });
 });
