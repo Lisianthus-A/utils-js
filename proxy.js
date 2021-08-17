@@ -1,9 +1,29 @@
+/* =========== 配置 ============ */
+const config = {
+    port: 4111, // 服务运行端口
+    targetHost: 'example.com', // 请求目标地址
+    targetPort: 9007, // 请求目标端口
+}
+
+/* =========== 以下内容无需更改 ============ */
 const http = require('http');
 
-const port = 4111;  // 服务运行端口
+const { port, targetHost, targetPort } = config;
 
-const targetServer = 'example.com';  // 请求目标地址
-const targetPort = 9007;  // 请求目标端口
+const buildRequestHeader = (headers = {}) => {
+    const { cookie } = headers;
+    const originHeaders = {
+        accept: 'application/json, text/plain, */*',
+        'accept-encoding': 'gzip, deflate, br',
+        'accept-language': 'zh-CN,zh;q=0.9',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36',
+        'content-type': headers['content-type'] || 'application/json;charset=utf-8',
+        host: targetHost,
+        referer: `http://${target}${targetPort === 80 ? '' : `:${targetPort}`}/`
+    };
+    cookie && (originHeaders.cookie = cookie);
+    return originHeaders;
+}
 
 const buildResponseHeader = (headers = {}) => ({
     ...headers,
@@ -36,8 +56,8 @@ const server = http.createServer((req, res) => {
         // 请求配置
         const options = {
             method,
-            headers,
-            hostname: targetServer,
+            headers: buildRequestHeader(headers),
+            hostname: targetHost,
             port: targetPort,
             path: url,
         };
@@ -49,8 +69,9 @@ const server = http.createServer((req, res) => {
                 serverData.push(chunk);
             });
 
+            // 服务端数据接收完毕，返回客户端
             httpRes.on('end', () => {
-                console.log(`[OK] ${method} ${url}`);
+                // console.log(`[OK] ${method} ${url}`);
                 const serverBuffer = Buffer.concat(serverData);
                 res.writeHead(httpRes.statusCode, buildResponseHeader(httpRes.headers));
                 res.write(serverBuffer);

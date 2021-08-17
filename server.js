@@ -1,16 +1,49 @@
+/* =========== 配置 ============ */
+const config = {
+    port: 4100,  // 运行端口
+    openBrowser: true,  // 自动打开浏览器
+};
+
+/* =========== 以下内容无需更改 ============ */
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 
-const port = 4100;  //运行端口
-const openBrowser = true;  //自动打开浏览器
+const { port, openBrowser } = config;
+
+const mapContentType = {
+    htm: 'text/html',
+    html: 'text/html',
+    js: 'text/javascript',
+    css: 'text/css',
+    json: 'application/json',
+    jpeg: 'image/jpeg',
+    jpg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    mp3: 'audio/mpeg',
+    pdf: 'application/pdf',
+    woff: 'font/woff',
+    woff2: 'font/woff2',
+    ttf: 'font/ttf',
+    svg: 'image/svg+xml',
+    txt: 'text/plain',
+    xml: 'application/xml',
+    tar: 'application/x-tar',
+    sh: 'application/x-sh'
+};
 
 const sendFile = (filePath, res) => new Promise(resolve => {
     let result;
+    const suffix = filePath.match(/\.(\w+)$/)?.[1];
+    // console.info(filePath, '------->', suffix);
+    const type = mapContentType[suffix];
     filePath = decodeURIComponent(filePath);
     try {
         const file = fs.readFileSync(filePath);
+        res.statusCode = 200;
+        type && res.setHeader('content-type', type);
         res.write(file);
         result = true;
     } catch (e) {
@@ -31,8 +64,8 @@ const server = http.createServer((req, res) => {
         filePath = path.join(__dirname, pathname);
     }
     sendFile(filePath, res).then(result => {
-        // result && console.log(`[ok]: ${url}`);
-        !result && console.log(`[err]: ${url}`);
+        // result && console.log(`[OK]: ${url}`);
+        !result && console.log(`[Error]: ${url}`);
     })
 });
 
