@@ -81,7 +81,7 @@ const server = http.createServer((req, res) => {
 
         httpReq.on('error', (err) => {
             console.log(`[Error] ${method} ${url}: ${err}`);
-            res.writeHead(httpRes.statusCode, buildResponseHeader(httpRes.headers));
+            res.writeHead(500, buildResponseHeader());
             res.write(JSON.stringify({ error: err }));
             res.end();
         });
