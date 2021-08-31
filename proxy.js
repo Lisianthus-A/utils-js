@@ -11,17 +11,12 @@ const http = require('http');
 const { port, targetHost, targetPort } = config;
 
 const buildRequestHeader = (headers = {}) => {
-    const { cookie } = headers;
     const originHeaders = {
-        accept: 'application/json, text/plain, */*',
-        'accept-encoding': 'gzip, deflate, br',
-        'accept-language': 'zh-CN,zh;q=0.9',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36',
-        'content-type': headers['content-type'] || 'application/json;charset=utf-8',
-        host: targetHost,
-        referer: `http://${target}${targetPort === 80 ? '' : `:${targetPort}`}/`
+        ...headers,
+        'Content-Type': headers['content-type'] || 'application/json;charset=utf-8',
+        Host: targetHost,
+        Referer: `http://${target}${targetPort === 80 ? '' : `:${targetPort}`}/`
     };
-    cookie && (originHeaders.cookie = cookie);
     return originHeaders;
 }
 

@@ -34,16 +34,20 @@ const mapContentType = {
     sh: 'application/x-sh'
 };
 
-const sendFile = (filePath, res) => new Promise(resolve => {
+const sendFile = (pathname, res) => new Promise(resolve => {
     let result;
-    const suffix = filePath.match(/\.(\w+)$/)?.[1];
-    // console.info(filePath, '------->', suffix);
-    const type = mapContentType[suffix];
-    filePath = decodeURIComponent(filePath);
+    const suffix = pathname.match(/\.(\w+)$/)?.[1];
+    // 文件路径
+    // 后缀为 undefined 时说明 pathname 类似 /aaa/bbb，应读取 index.html
+    const filePath = decodeURIComponent(
+        path.join(__dirname, suffix ? pathname : 'index.html')
+    );
+    // Content-Type
+    const type = mapContentType[suffix] || 'text/html';
     try {
         const file = fs.readFileSync(filePath);
         res.statusCode = 200;
-        type && res.setHeader('content-type', type);
+        res.setHeader('Content-Type', type);
         res.write(file);
         result = true;
     } catch (e) {
@@ -56,17 +60,11 @@ const sendFile = (filePath, res) => new Promise(resolve => {
 
 const server = http.createServer((req, res) => {
     const { url } = req;
-    let filePath;
-    if (url === '/') {  // 根地址，返回 index.html
-        filePath = path.join(__dirname, 'index.html');
-    } else {  // 返回相应文件
-        const pathname = url.match(/[\/\w\-\.%!_:\(\)]+/)?.[0] || '';
-        filePath = path.join(__dirname, pathname);
-    }
-    sendFile(filePath, res).then(result => {
-        // result && console.log(`[OK]: ${url}`);
-        !result && console.log(`[Error]: ${url}`);
-    })
+    const pathname = url.match(/[\/\w\-\.%!_:\(\)]+/)?.[0] || '';
+    sendFile(pathname, res).then(result => {
+        // result && console.log(`[Server OK]: ${url}`);
+        !result && console.log(`[Server ERR]: ${url}`);
+    });
 });
 
 server.listen(port, (err) => {
