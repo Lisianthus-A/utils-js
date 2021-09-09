@@ -22,7 +22,7 @@ const config = {
 /* =========== 以下内容无需更改 ============ */
 const http = require('http');
 
-const { port, targetHost, targetPort, mock } = config;
+const { port, targetHost, targetPort, mock = {} } = config;
 
 const buildRequestHeader = (headers = {}) => {
     const originHeaders = {
