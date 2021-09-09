@@ -1,14 +1,28 @@
 /* =========== 配置 ============ */
 const config = {
-    port: 4111, // 服务运行端口
-    targetHost: 'example.com', // 请求目标地址
-    targetPort: 9007, // 请求目标端口
+    // 服务运行端口
+    // 端口被占用时会自动寻找下一个端口
+    port: 4111,
+    // 请求目标地址
+    targetHost: 'example.com',
+    // 请求目标端口
+    targetPort: 9007,
+    // 需要 mock 的地址和数据
+    mock: {
+        // '/api/user/detail': {
+        //     code: 0,
+        //     data: {
+        //         id: 1,
+        //         name: 'admin'
+        //     }
+        // },
+    },
 }
 
 /* =========== 以下内容无需更改 ============ */
 const http = require('http');
 
-const { port, targetHost, targetPort } = config;
+const { port, targetHost, targetPort, mock } = config;
 
 const buildRequestHeader = (headers = {}) => {
     const originHeaders = {
@@ -29,9 +43,36 @@ const buildResponseHeader = (headers = {}) => ({
     'Content-Type': 'application/json; charset=utf-8',
 });
 
-const server = http.createServer((req, res) => {
+// 查看端口是否可用
+const isPortUseable = (p) => {
+    return new Promise(resolve => {
+        const s = http.createServer().listen(p);
+        // 端口可用
+        s.on('listening', () => {
+            s.close();
+            resolve(true);
+        });
+        // 端口不可用
+        s.on('error', () => {
+            resolve(false);
+        });
+    });
+}
 
+const server = http.createServer((req, res) => {
     const { method, url, headers } = req;
+    
+    // 使用 mock 的数据进行响应
+    for (const [mockUrl, data] of Object.entries(mock)) {
+        if (url.startsWith(mockUrl)) {
+            res.writeHead(200, {
+                'Content-Type': 'application/json'
+            });
+            res.write(JSON.stringify(data));
+            res.end();
+            return;
+        }
+    }
 
     if (method === 'OPTIONS') {
         res.writeHead(200, buildResponseHeader());
@@ -86,7 +127,20 @@ const server = http.createServer((req, res) => {
     });
 });
 
-server.listen(port, (err) => {
-    err && console.log(err);
-    !err && console.log(`server runing on port: ${port}`);
-});
+const listen = async () => {
+    // 在 port ~ port + 10 中寻找可用的端口进行监听
+    for (let p = port; p < port + 10; ++p) {
+        const isUseable = await isPortUseable(p);
+        if (isUseable) {
+            server.listen(p, (err) => {
+                err && console.log(err);
+                !err && console.log(`server runing on port: ${p}`);
+            });
+            return;
+        }
+    }
+
+    console.error(`Err: Port ${port} ~ ${port + 10} are disabled!`);
+}
+
+listen();
