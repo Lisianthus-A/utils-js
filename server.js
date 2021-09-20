@@ -1,7 +1,10 @@
 /* =========== 配置 ============ */
 const config = {
-    port: 4100,  // 运行端口
-    openBrowser: true,  // 自动打开浏览器
+    // 运行端口
+    // 端口被占用时会自动寻找下一个端口
+    port: 4100,
+    // 自动打开浏览器
+    openBrowser: true,
 };
 
 /* =========== 以下内容无需更改 ============ */
@@ -67,8 +70,37 @@ const server = http.createServer((req, res) => {
     });
 });
 
-server.listen(port, (err) => {
-    err && console.log(err);
-    !err && console.log(`server runing on port: ${port}`);
-    !err && openBrowser && exec(`start http://localhost:${port}`);
-});
+// 查看端口是否可用
+const isPortUseable = (p) => {
+    return new Promise(resolve => {
+        const s = http.createServer().listen(p);
+        // 端口可用
+        s.on('listening', () => {
+            s.close();
+            resolve(true);
+        });
+        // 端口不可用
+        s.on('error', () => {
+            resolve(false);
+        });
+    });
+}
+
+const listen = async () => {
+    // 在 port ~ port + 10 中寻找可用的端口进行监听
+    for (let p = port; p < port + 10; ++p) {
+        const isUseable = await isPortUseable(p);
+        if (isUseable) {
+            server.listen(p, (err) => {
+                err && console.log(err);
+                !err && console.log(`server runing on port: ${p}`);
+                !err && openBrowser && exec(`start http://localhost:${p}`);
+            });
+            return;
+        }
+    }
+
+    console.error(`Err: Port ${port} ~ ${port + 10} are disabled!`);
+}
+
+listen();
