@@ -8,6 +8,7 @@ const config = {
     // 请求目标端口
     targetPort: 9007,
     // 需要 mock 的地址和数据
+    // 优先级比 proxyUrl 高
     mock: {
         // '/api/user/detail': {
         //     code: 0,
@@ -17,23 +18,32 @@ const config = {
         //     }
         // },
     },
+    // 需要额外代理到其他地址的 url
+    // 如以 /api/user 开头的地址代理到 192.168.1.1:5000
+    proxyUrl: {
+        // '/api/user': '192.168.1.1:5000',
+        // '/api/login': 'example.com',
+        // '/api/upload': 'example.com:1000'
+    }
 }
 
 /* =========== 以下内容无需更改 ============ */
 const http = require('http');
 
-const { port, targetHost, targetPort, mock = {} } = config;
+const { port, targetHost, targetPort, mock = {}, proxyUrl = {} } = config;
 
+// 生成请求的 headers
 const buildRequestHeader = (headers = {}) => {
     const originHeaders = {
         ...headers,
         'Content-Type': headers['content-type'] || 'application/json;charset=utf-8',
-        Host: targetHost,
-        Referer: `http://${target}${targetPort === 80 ? '' : `:${targetPort}`}/`
+        // Host: targetHost,
+        // Referer: `http://${target}${targetPort === 80 ? '' : `:${targetPort}`}/`
     };
     return originHeaders;
 }
 
+// 生成响应的 headers
 const buildResponseHeader = (headers = {}) => ({
     ...headers,
     'Access-Control-Allow-Origin': headers.origin || '*',
@@ -42,6 +52,35 @@ const buildResponseHeader = (headers = {}) => ({
     'Access-Control-Allow-Methods': 'PUT,POST,GET,DELETE,OPTIONS',
     'Content-Type': 'application/json; charset=utf-8',
 });
+
+// 生成请求的 host 和 port
+const buildRequestHostAndPort = (url) => {
+    const defaultValue = [targetHost, targetPort];
+    for (const [prefix, target] of Object.entries(proxyUrl)) {
+        if (url.startsWith(prefix)) {
+            const [host, port = 80] = target.split(':');
+            return [host, port];
+        }
+    }
+
+    return defaultValue;
+}
+
+// 生成请求配置
+const buildRequestOptions = (req) => {
+    const { method, headers, url } = req;
+    const [host, port] = buildRequestHostAndPort(url);
+
+    const options = {
+        method,
+        headers: buildRequestHeader(headers),
+        hostname: host,
+        port: port,
+        path: url,
+    };
+
+    return options;
+};
 
 // 查看端口是否可用
 const isPortUseable = (p) => {
@@ -60,8 +99,8 @@ const isPortUseable = (p) => {
 }
 
 const server = http.createServer((req, res) => {
-    const { method, url, headers } = req;
-    
+    const { method, url } = req;
+
     // 使用 mock 的数据进行响应
     for (const [mockUrl, data] of Object.entries(mock)) {
         if (url.startsWith(mockUrl)) {
@@ -90,13 +129,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
         const clientBuffer = Buffer.concat(clientData);
         // 请求配置
-        const options = {
-            method,
-            headers: buildRequestHeader(headers),
-            hostname: targetHost,
-            port: targetPort,
-            path: url,
-        };
+        const options = buildRequestOptions(req);        
 
         // 发起请求
         const httpReq = http.request(options, (httpRes) => {
