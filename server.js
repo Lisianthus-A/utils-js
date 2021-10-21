@@ -11,6 +11,7 @@ const config = {
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 const { exec } = require('child_process');
 
 const { port, openBrowser } = config;
@@ -49,12 +50,14 @@ const sendFile = (pathname, res) => new Promise(resolve => {
     const type = mapContentType[suffix] || 'text/html';
     try {
         const file = fs.readFileSync(filePath);
-        res.statusCode = 200;
-        res.setHeader('Content-Type', type);
-        res.write(file);
+        res.writeHead(200, {
+            'Content-Type': type,
+            'Content-Encoding': 'gzip'
+        });
+        res.write(zlib.gzipSync(file));
         result = true;
     } catch (e) {
-        res.writeHead(404);
+        res.statusCode = 404;
         result = false;
     }
     res.end();
