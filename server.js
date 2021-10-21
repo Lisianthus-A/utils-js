@@ -91,7 +91,7 @@ const isPortUseable = (p) => {
 
 const listen = async () => {
     // 在 port ~ port + 10 中寻找可用的端口进行监听
-    for (let p = port; p < port + 10; ++p) {
+    for (let p = port; p <= port + 10; ++p) {
         const isUseable = await isPortUseable(p);
         if (isUseable) {
             server.listen(p, (err) => {
