@@ -38,8 +38,10 @@ const mapContentType = {
     sh: 'application/x-sh'
 };
 
-const sendFile = (pathname, res) => new Promise(resolve => {
+const sendFile = (req, res) => new Promise(resolve => {
     let result;
+    const pathname = req.url.match(/[\/\w\-\.%!_:\(\)]+/)?.[0] || '';
+    // 文件后缀
     const suffix = pathname.match(/\.(\w+)$/)?.[1];
     // 文件路径
     // 后缀为 undefined 时说明 pathname 类似 /aaa/bbb，应读取 index.html
@@ -48,26 +50,35 @@ const sendFile = (pathname, res) => new Promise(resolve => {
     );
     // Content-Type
     const type = mapContentType[suffix] || 'text/html';
+
     try {
-        const file = fs.readFileSync(filePath);
-        res.writeHead(200, {
-            'Content-Type': type,
-            'Content-Encoding': 'gzip'
-        });
-        res.write(zlib.gzipSync(file));
+        res.statusCode = 200;
+        res.setHeader("Content-Type", type);
+        const encoding = req.headers["accept-encoding"];
+        const readStream = fs.createReadStream(filePath);
+        if (encoding && encoding.includes('gzip')) {  // gzip
+            res.setHeader("Content-Encoding", 'gzip');
+            const compress = zlib.createGzip();
+            readStream.pipe(compress).pipe(res);
+        } else if (encoding && encoding.includes('deflate')) {  // deflate
+            res.setHeader("Content-Encoding", 'deflate');
+            const compress = zlib.createDeflate();
+            readStream.pipe(compress).pipe(res);
+        } else {  // 不压缩
+            readStream.pipe(res);
+        }
         result = true;
     } catch (e) {
         res.statusCode = 404;
         result = false;
+        res.end();
     }
-    res.end();
     resolve(result);
 });
 
 const server = http.createServer((req, res) => {
     const { url } = req;
-    const pathname = url.match(/[\/\w\-\.%!_:\(\)]+/)?.[0] || '';
-    sendFile(pathname, res).then(result => {
+    sendFile(req, res).then(result => {
         // result && console.log(`[Server OK]: ${url}`);
         !result && console.log(`[Server ERR]: ${url}`);
     });
