@@ -24,47 +24,58 @@ const config = {
         // '/api/user': '192.168.1.1:5000',
         // '/api/login': 'example.com',
         // '/api/upload': 'example.com:1000'
-    }
-}
+    },
+};
 
 /* =========== 以下内容无需更改 ============ */
-const http = require('http');
+const http = require("http");
 
 const { port, targetHost, targetPort, mock = {}, proxyUrl = {} } = config;
 
+// 合并 headers & 处理成 lowerCase
+const mergeHeaders = (target, source) => {
+    const res = {};
+    for (const key in target) {
+        const lowerCaseKey = key.toLowerCase();
+        res[lowerCaseKey] = target[key];
+    }
+    for (const key in source) {
+        const lowerCaseKey = key.toLowerCase();
+        res[lowerCaseKey] = source[key];
+    }
+    return res;
+};
+
 // 生成请求的 headers
 const buildRequestHeader = (headers = {}) => {
-    const originHeaders = {
-        ...headers,
-        'Content-Type': headers['content-type'] || 'application/json;charset=utf-8',
-        // Host: targetHost,
-        // Referer: `http://${target}${targetPort === 80 ? '' : `:${targetPort}`}/`
-    };
-    return originHeaders;
-}
+    return mergeHeaders(headers, {
+        "content-type": headers["content-type"] || "application/json;charset=utf-8",
+    });
+};
 
 // 生成响应的 headers
-const buildResponseHeader = (headers = {}) => ({
-    ...headers,
-    'Access-Control-Allow-Origin': headers.origin || '*',
-    'Access-Control-Allow-Credentials': true,
-    'Access-Control-Allow-Headers': 'X-Requested-With,Content-Type',
-    'Access-Control-Allow-Methods': 'PUT,POST,GET,DELETE,OPTIONS',
-    'Content-Type': 'application/json; charset=utf-8',
-});
+const buildResponseHeader = (headers, origin = "*") => {
+    return mergeHeaders(headers, {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": true,
+        "Access-Control-Allow-Headers": "X-Requested-With,Content-Type,Authorization",
+        "Access-Control-Allow-Methods": "PUT,POST,GET,DELETE,OPTIONS",
+        "Content-Type": "application/json; charset=utf-8",
+    });
+};
 
 // 生成请求的 host 和 port
 const buildRequestHostAndPort = (url) => {
     const defaultValue = [targetHost, targetPort];
     for (const [prefix, target] of Object.entries(proxyUrl)) {
         if (url.startsWith(prefix)) {
-            const [host, port = 80] = target.split(':');
+            const [host, port = 80] = target.split(":");
             return [host, port];
         }
     }
 
     return defaultValue;
-}
+};
 
 // 生成请求配置
 const buildRequestOptions = (req) => {
@@ -84,19 +95,19 @@ const buildRequestOptions = (req) => {
 
 // 查看端口是否可用
 const isPortUseable = (p) => {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         const s = http.createServer().listen(p);
         // 端口可用
-        s.on('listening', () => {
+        s.on("listening", () => {
             s.close();
             resolve(true);
         });
         // 端口不可用
-        s.on('error', () => {
+        s.on("error", () => {
             resolve(false);
         });
     });
-}
+};
 
 const server = http.createServer((req, res) => {
     const { method, url } = req;
@@ -104,53 +115,52 @@ const server = http.createServer((req, res) => {
     // 使用 mock 的数据进行响应
     for (const [mockUrl, data] of Object.entries(mock)) {
         if (url.startsWith(mockUrl)) {
-            res.writeHead(200, {
-                'Content-Type': 'application/json'
-            });
+            console.log(`[Mock] ${mockUrl}`);
+            res.writeHead(200, buildResponseHeader({ "Content-Type": "application/json" }, req.headers.origin));
             res.write(JSON.stringify(data));
             res.end();
             return;
         }
     }
 
-    if (method === 'OPTIONS') {
-        res.writeHead(200, buildResponseHeader());
+    if (method === "OPTIONS") {
+        res.writeHead(200, buildResponseHeader({}, req.headers.origin));
         res.end();
         return;
     }
 
     // 接收客户端发送过来的数据
     const clientData = [];
-    req.on('data', (chunk) => {
+    req.on("data", (chunk) => {
         clientData.push(chunk);
     });
 
     // 接收完毕
-    req.on('end', () => {
+    req.on("end", () => {
         const clientBuffer = Buffer.concat(clientData);
         // 请求配置
-        const options = buildRequestOptions(req);        
+        const options = buildRequestOptions(req);
 
         // 发起请求
         const httpReq = http.request(options, (httpRes) => {
             const serverData = [];
-            httpRes.on('data', (chunk) => {
+            httpRes.on("data", (chunk) => {
                 serverData.push(chunk);
             });
 
             // 服务端数据接收完毕，返回客户端
-            httpRes.on('end', () => {
-                // console.log(`[OK] ${method} ${url}`);
+            httpRes.on("end", () => {
+                console.log(`[OK] ${method} ${url}`);
                 const serverBuffer = Buffer.concat(serverData);
-                res.writeHead(httpRes.statusCode, buildResponseHeader(httpRes.headers));
+                res.writeHead(httpRes.statusCode, buildResponseHeader(httpRes.headers, req.headers.origin));
                 res.write(serverBuffer);
                 res.end();
-            })
+            });
         });
 
-        httpReq.on('error', (err) => {
+        httpReq.on("error", (err) => {
             console.log(`[Error] ${method} ${url}: ${err}`);
-            res.writeHead(500, buildResponseHeader());
+            res.writeHead(500, buildResponseHeader({}, req.headers.origin));
             res.write(JSON.stringify({ error: err }));
             res.end();
         });
@@ -174,6 +184,6 @@ const listen = async () => {
     }
 
     console.error(`Err: Port ${port} ~ ${port + 10} are disabled!`);
-}
+};
 
 listen();
