@@ -62,13 +62,14 @@ const sendFile = (req, res) => new Promise(resolve => {
         res.statusCode = 200;
         res.setHeader("Content-Type", type);
         const encoding = req.headers["accept-encoding"];
+        const enableEncode = encoding && type.indexOf("image") === -1;
         const readStream = fs.createReadStream(filePath);
-        if (encoding && encoding.includes('gzip')) {  // gzip
+        if (enableEncode && encoding.includes('gzip')) {  // gzip
             res.setHeader("Content-Encoding", 'gzip');
             const compress = zlib.createGzip();
             readStream.pipe(compress).pipe(res);
-        } else if (encoding && encoding.includes('deflate')) {  // deflate
-            res.setHeader("Content-Encoding", 'deflate');
+        } else if (enableEncode && encoding.includes('deflate')) {  // deflate
+            res.setHeader("Content-Encoding", 'deflate'); 
             const compress = zlib.createDeflate();
             readStream.pipe(compress).pipe(res);
         } else {  // 不压缩
