@@ -58,7 +58,7 @@ const buildResponseHeader = (headers, origin = "*") => {
     return mergeHeaders(headers, {
         "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Credentials": true,
-        "Access-Control-Allow-Headers": "X-Requested-With,Content-Type,Authorization",
+        "Access-Control-Allow-Headers": "X-Requested-With,Content-Type,Authorization,jwt",
         "Access-Control-Allow-Methods": "PUT,POST,GET,DELETE,OPTIONS",
         "Content-Type": "application/json; charset=utf-8",
     });
