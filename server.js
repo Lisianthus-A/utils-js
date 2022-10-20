@@ -5,6 +5,8 @@ const config = {
     port: 4100,
     // 自动打开浏览器
     openBrowser: true,
+    // 是否开启文件压缩 
+    compress: false,
 };
 
 /* =========== 以下内容无需更改 ============ */
@@ -62,7 +64,7 @@ const sendFile = (req, res) => new Promise(resolve => {
         res.statusCode = 200;
         res.setHeader("Content-Type", type);
         const encoding = req.headers["accept-encoding"];
-        const enableEncode = encoding && type.indexOf("image") === -1;
+        const enableEncode = config.compress && encoding && type.indexOf("image") === -1;
         const readStream = fs.createReadStream(filePath);
         if (enableEncode && encoding.includes('gzip')) {  // gzip
             res.setHeader("Content-Encoding", 'gzip');
