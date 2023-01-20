@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Console</title>
+</head>
+
+<body>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+        }
+
+        #i1 {
+            width: 672px;
+            outline: none;
+        }
+
+        #btn1,
+        #btn2 {
+            width: 64px;
+        }
+
+        #textarea {
+            margin-top: 16px;
+            margin-left: 16px;
+            width: 800px;
+            height: 500px;
+            overflow: auto;
+            resize: auto;
+            white-space: pre-line;
+            word-break: break-all;
+            border: 1px solid #ddd;
+        }
+    </style>
+
+    <div id="textarea"></div>
+    <div style="display: flex; margin-left: 16px">
+        <input id="i1" />
+        <button id="btn1">执行</button>
+        <button id="btn2">清空</button>
+    </div>
+
+    <script>
+        const textArea = document.getElementById("textarea");
+        const content = document.getElementById("i1");
+        const btn1 = document.getElementById("btn1");
+        const btn2 = document.getElementById("btn2");
+
+        const ws = new WebSocket(`ws://127.0.0.1:3200/ws/console`);
+
+        let cursorIndex = 0;
+        const commandStack = [];
+
+        const showMessage = (msg) => {
+            const time = new Date().toLocaleTimeString();
+            const textNode = document.createTextNode(`[${time}] ${msg}\n`);
+            textArea.appendChild(textNode);
+            textArea.scrollTop = 99999;
+        };
+
+        const sendMessage = () => {
+            if (!content.value) {
+                return;
+            }
+
+            const commandText = content.value;
+            content.value = "";
+            showMessage(commandText);
+            ws.send(commandText);
+            commandStack.push(commandText);
+            commandStack.length > 5 && commandStack.shift();
+        };
+
+        ws.addEventListener("open", () => showMessage("WebSocket open"));
+        ws.addEventListener("message", (evt) => showMessage(evt.data));
+        ws.addEventListener("error", () => showMessage("WebSocket error"));
+        ws.addEventListener("close", () => showMessage("WebSocket close"));
+        btn1.addEventListener("click", sendMessage);
+        btn2.addEventListener("click", () => (textArea.textContent = ""));
+        content.addEventListener("keydown", (evt) => {
+            if (evt.key === "Enter") {
+                sendMessage();
+                cursorIndex = commandStack.length;
+            } else if (evt.key === "ArrowUp") {
+                cursorIndex -= 1;
+                const commandText = commandStack[cursorIndex];
+                if (commandText) {
+                    content.value = commandText;
+                    setTimeout(() => {
+                        content.setSelectionRange(commandText.length, commandText.length);
+                    }, 0);
+                }
+            } else if (evt.key === "ArrowDown") {
+                cursorIndex += 1;
+                const commandText = commandStack[cursorIndex];
+                if (commandText) {
+                    content.value = commandText;
+                    setTimeout(() => {
+                        content.setSelectionRange(commandText.length, commandText.length);
+                    }, 0);
+                }
+            } else {
+                cursorIndex = commandStack.length;
+            }
+        });
+    </script>
+</body>
+
+</html>
