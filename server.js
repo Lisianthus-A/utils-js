@@ -21,14 +21,22 @@ const { port, openBrowser } = config;
 const mapContentType = {
     htm: 'text/html',
     html: 'text/html',
+    mjs: 'text/javascript',
     js: 'text/javascript',
     css: 'text/css',
+    map: 'application/json',
     json: 'application/json',
     jpeg: 'image/jpeg',
     jpg: 'image/jpeg',
     png: 'image/png',
+    webp: 'image/webp',
     gif: 'image/gif',
-    mp3: 'audio/mpeg',
+    mp3: 'audio/mp3',
+    m4a: 'audio/mp4',
+    mp4a: 'audio/mp4',
+    wav: 'audio/wav',
+    weba: 'audio/webm',
+    ogg: 'audio/ogg',
     pdf: 'application/pdf',
     woff: 'font/woff',
     woff2: 'font/woff2',
@@ -37,7 +45,8 @@ const mapContentType = {
     txt: 'text/plain',
     xml: 'application/xml',
     tar: 'application/x-tar',
-    sh: 'application/x-sh'
+    sh: 'application/x-sh',
+    zip: 'application/zip'
 };
 
 const sendFile = (req, res) => new Promise(resolve => {
@@ -71,7 +80,7 @@ const sendFile = (req, res) => new Promise(resolve => {
             const compress = zlib.createGzip();
             readStream.pipe(compress).pipe(res);
         } else if (enableEncode && encoding.includes('deflate')) {  // deflate
-            res.setHeader("Content-Encoding", 'deflate'); 
+            res.setHeader("Content-Encoding", 'deflate');
             const compress = zlib.createDeflate();
             readStream.pipe(compress).pipe(res);
         } else {  // 不压缩
