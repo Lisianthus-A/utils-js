@@ -61,7 +61,7 @@ const sendFile = (req, res) => new Promise(resolve => {
     // Content-Type
     const type = mapContentType[suffix] || 'text/html';
 
-    fs.access(filePath, (err) => {
+    fs.stat(filePath, (err, stat) => {
         // 文件读取错误
         if (err) {
             res.statusCode = 404;
@@ -72,6 +72,7 @@ const sendFile = (req, res) => new Promise(resolve => {
 
         res.statusCode = 200;
         res.setHeader("Content-Type", type);
+        res.setHeader("Content-Length", stat.size);
         const encoding = req.headers["accept-encoding"];
         const enableEncode = config.compress && encoding && type.indexOf("image") === -1;
         const readStream = fs.createReadStream(filePath);
