@@ -340,6 +340,10 @@
       }
   
       function getResolveValue(value) {
+        if (value instanceof Error) {
+          return value.message || value.toString();
+        }
+
         var type = Object.prototype.toString.call(value);
         switch (type) {
           case "[object Object]":
