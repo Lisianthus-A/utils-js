@@ -34,7 +34,7 @@
             height: 500px;
             overflow: auto;
             resize: auto;
-            white-space: pre-line;
+            white-space: pre-wrap;
             word-break: break-all;
             border: 1px solid #ddd;
         }
@@ -59,6 +59,10 @@
         const commandStack = [];
 
         const showMessage = (msg) => {
+            msg = msg.replace(/\\n/g, "\n");
+            msg = msg.replace(/\\r/g, "");
+            msg = msg.replace(/\\t/g, "  ");
+
             const time = new Date().toLocaleTimeString();
             const textNode = document.createTextNode(`[${time}] ${msg}\n`);
             textArea.appendChild(textNode);

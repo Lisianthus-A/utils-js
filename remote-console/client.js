@@ -237,8 +237,6 @@
   (function () {
     // 服务 IP 地址
     var serverIp = "172.16.4.152";
-    // 是否显示函数
-    var showFunction = false;
   
     var useWebSocket = typeof window.WebSocket !== "undefined";
     var connected = false;
@@ -339,7 +337,8 @@
         return o;
       }
   
-      function getResolveValue(value) {
+      function getResolveValue(value, showFunction) {
+        showFunction = showFunction === true;
         if (value instanceof Error) {
           return value.message || value.toString();
         }
@@ -358,7 +357,7 @@
       }
   
       try {
-        var resolveValue = getResolveValue(value);
+        var resolveValue = getResolveValue(value, true);
         return JSON.stringify(resolveValue);
       } catch (err) {
         return "resolveError: " + err.message || err.toString();
