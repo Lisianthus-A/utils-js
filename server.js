@@ -93,7 +93,7 @@ const sendFile = (req, res) => new Promise(resolve => {
 
         const encoding = req.headers["accept-encoding"];
         const enableEncode = config.compress && encoding && type.indexOf("image") === -1;
-        const readStream = fs.createReadStream(filePath);
+        const readStream = fs.createReadStream(filePath, { start, end });
         if (enableEncode && encoding.includes('gzip')) {  // gzip
             res.setHeader("Content-Encoding", 'gzip');
             const compress = zlib.createGzip();
