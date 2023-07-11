@@ -73,6 +73,24 @@ const sendFile = (req, res) => new Promise(resolve => {
         res.statusCode = 200;
         res.setHeader("Content-Type", type);
         res.setHeader("Content-Length", stat.size);
+
+        const range = req.headers["range"];
+        let start = undefined;
+        let end = undefined;
+        if (range && range.indexOf(",") === -1) {
+            const parts = range.match(/\d+/g) || [];
+            start = Number(parts[0]);
+            end = parts[1] ? Number(parts[1]) : stat.size - 1;
+            isNaN(start) && (start = undefined);
+            isNaN(end) && (end = undefined);
+
+            if (typeof start === "number" && typeof end === "number") {
+                res.statusCode = 206;
+                res.setHeader("Content-Range", `bytes ${start}-${end}/${stat.size}`);
+                res.setHeader("Content-Length", end - start + 1);
+            }
+        }
+
         const encoding = req.headers["accept-encoding"];
         const enableEncode = config.compress && encoding && type.indexOf("image") === -1;
         const readStream = fs.createReadStream(filePath);
