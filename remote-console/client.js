@@ -271,13 +271,13 @@
       }
   
       logType.forEach(function (type) {
-        var origMethod = window.console[type];
+        // var origMethod = window.console[type];
         window.console[type] = function () {
           var args = [];
           for (var i = 0; i < arguments.length; ++i) {
             args.push(arguments[i]);
           }
-          typeof origMethod === "function" && origMethod.apply(null, args);
+          // typeof origMethod === "function" && origMethod.apply(null, args);
           sendToServer(args);
         };
       });
