@@ -85,7 +85,7 @@
         ws.addEventListener("open", () => showMessage("WebSocket open"));
         ws.addEventListener("message", (evt) => {
             try {
-                sendMessage(evt.data);
+                showMessage(evt.data);
                 const json = JSON.parse(evt.data);
                 console.log(json);
             } catch (err) {
