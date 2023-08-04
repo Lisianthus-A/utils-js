@@ -83,7 +83,14 @@
         };
 
         ws.addEventListener("open", () => showMessage("WebSocket open"));
-        ws.addEventListener("message", (evt) => showMessage(evt.data));
+        ws.addEventListener("message", (evt) => {
+            try {
+                const json = JSON.parse(evt.data);
+                console.log(json);
+            } catch (err) {
+                // console.log("catch error in message listener:", err);
+            }
+        });
         ws.addEventListener("error", () => showMessage("WebSocket error"));
         ws.addEventListener("close", () => showMessage("WebSocket close"));
         btn1.addEventListener("click", sendMessage);
