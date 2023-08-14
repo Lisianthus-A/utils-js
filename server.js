@@ -50,7 +50,8 @@ const mapContentType = {
 };
 
 const sendFile = (req, res) => new Promise(resolve => {
-    const pathname = req.url.match(/[\/\w\-\.%!_:\(\)]+/)?.[0] || '';
+    const url = req.url.indexOf("http") === 0 ? req.url : "http://127.0.0.1" + req.url;
+    const pathname = new URL(url).pathname || "";
     // 文件后缀
     const suffix = pathname.match(/\.(\w+)$/)?.[1];
     // 文件路径
