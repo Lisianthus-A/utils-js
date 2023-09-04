@@ -1,4 +1,4 @@
-// polufill for Array.prototype.forEach
+// polyfill for Array.prototype.forEach
 (function () {
     if (!Array.prototype.forEach) {
       Array.prototype.forEach = function (callbackfn) {
@@ -9,7 +9,7 @@
     }
   })();
   
-  // polufill for JSON
+  // polyfill for JSON
   (function () {
     if (window.JSON) {
       return;
