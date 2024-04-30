@@ -143,17 +143,14 @@ const server = http.createServer((req, res) => {
 
         // 发起请求
         const httpReq = http.request(options, (httpRes) => {
-            const serverData = [];
+            res.writeHead(httpRes.statusCode, buildResponseHeader(httpRes.headers, req.headers.origin));
             httpRes.on("data", (chunk) => {
-                serverData.push(chunk);
+                res.write(chunk);
             });
 
             // 服务端数据接收完毕，返回客户端
             httpRes.on("end", () => {
                 console.log(`[OK] ${method} ${url}`);
-                const serverBuffer = Buffer.concat(serverData);
-                res.writeHead(httpRes.statusCode, buildResponseHeader(httpRes.headers, req.headers.origin));
-                res.write(serverBuffer);
                 res.end();
             });
         });
