@@ -117,7 +117,7 @@ class Ajax {
     let paramsUrl = "";
     paramsUrl += "?";
     for (const key in data) {
-      paramsUrl += `${key}=${data[key]}&`;
+      paramsUrl += `${key}=${encodeURIComponent(data[key])}&`;
     }
     paramsUrl = paramsUrl.slice(0, -1);
 
